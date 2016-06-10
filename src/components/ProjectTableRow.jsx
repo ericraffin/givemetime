@@ -1,12 +1,12 @@
 import React, { PropTypes } from 'react'
-import IconButton from 'material-ui/IconButton';
-import ActionDelete from 'material-ui/svg-icons/action/delete';
+import IconButton from 'material-ui/IconButton'
+import ActionDelete from 'material-ui/svg-icons/action/delete'
 import LinearProgress from 'material-ui/LinearProgress'
-import {Card, CardActions, CardHeader, CardText} from 'material-ui/Card';
-import ProjectDialog from './ProjectDialog.jsx';
-import GiveTimeDialog from './GiveTimeDialog.jsx';
-import { connect } from 'react-apollo';
-import gql from 'apollo-client/gql';
+import { Card, CardActions, CardHeader, CardText } from 'material-ui/Card'
+import ProjectDialog from './ProjectDialog.jsx'
+import GiveTimeDialog from './GiveTimeDialog.jsx'
+import { connect } from 'react-redux'
+import { getGraphQL, projectDeleted } from '../actions.js'
 
 
 class ProjectTableRowComponent extends React.Component {
@@ -29,12 +29,13 @@ class ProjectTableRowComponent extends React.Component {
                       acquired={this.props.acquired} />
                   <GiveTimeDialog
                       id={this.props.id}
+                      rowId={this.props.rowId}
                       description={this.props.description}
                       title={this.props.title}
                       author={this.props.author}
                       estimate={this.props.estimate}
                       acquired={this.props.acquired} />
-                  <IconButton onTouchTap={() => this.props.mutations.deleteProject(this.props.id)}>
+                    <IconButton onTouchTap={() => this.props.onDelete.call(this, this.props.id)}>
                       <ActionDelete />
                   </IconButton>
               </CardActions>
@@ -45,36 +46,36 @@ class ProjectTableRowComponent extends React.Component {
 
 ProjectTableRowComponent.propTypes = {
     id: PropTypes.string.isRequired,
+    rowId: PropTypes.number.isRequired,
     title: PropTypes.string.isRequired,
     author: PropTypes.string,
     description: PropTypes.string,
     estimate: PropTypes.number.isRequired,
     acquired: PropTypes.number.isRequired,
-};
+    onDelete: PropTypes.func.isRequired,
+}
 
 
-function mapMutationsToProps({ ownProps, state }) {
+const mapDispatchToProps = (dispatch) => {
     return {
-        deleteProject: (id) => ({
-            mutation: gql`
+        onDelete: (id) => {
+            dispatch(getGraphQL(`
                 mutation deleteProject(
-                  $id: ID!
+                    $id: ID!
                 ) {
                     deleteProject(input: {
                         id: $id
                     }) {
                         id
                     }
-                }
-            `,
-            variables: {
-                id: id
-            },
-        }),
-    };
-};
+                }`,
+                { id: id },
+                (response) => dispatch(projectDeleted(response.deleteProject.id))
+            ))
+        },
+    }
+}
 
-const ProjectTableRow = connect({mapMutationsToProps})(ProjectTableRowComponent)
+const ProjectTableRow = connect(null, mapDispatchToProps)(ProjectTableRowComponent)
 
-
-export default ProjectTableRow;
+export default ProjectTableRow
